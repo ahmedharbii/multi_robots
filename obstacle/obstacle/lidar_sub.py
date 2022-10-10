@@ -14,7 +14,7 @@
 
 import rclpy
 from rclpy.node import Node
-
+import numpy as np
 from sensor_msgs.msg import LaserScan
 
 
@@ -31,7 +31,7 @@ class MinimalSubscriber(Node):
         self.subscription  # prevent unused variable warning
 
     def listener_callback(self, msg):
-        self.get_logger().info('I heard: "%s"' % msg.ranges[355:360])
+        self.get_logger().info('Lidar values = "%s"' % np.array(msg.ranges[0]))
 
 
 def main(args=None):
