@@ -25,7 +25,7 @@ class ObstacleAvoidance(Node):
         self.obstacle = 0 #obstacle flag
 
     def lidar_callback(self, msg):
-        lidar_range = np.array(msg.ranges[0:25] + msg.ranges[325:360]) # -10 to 10 degrees range
+        lidar_range = np.array(msg.ranges[0:25] + msg.ranges[325:360]) # -25 to 25 degrees range
 
         #this to take the minimum non zeros numbers "as lidar will give 0.0 if it is out of range too"
         if np.sum(lidar_range) > 0.1: #
@@ -44,18 +44,23 @@ class ObstacleAvoidance(Node):
         self.get_logger().info('Lidar ranges : "%s"' % lidar_range)
         
 
-    def vel_forward(self):
+    def vel_forward(self, interrupt=False):
         msg = Twist()
         
         if self.obstacle == 0: #There is no obstacle
 
             msg.linear.x = 0.15
             msg.angular.z = 0.0
+            self.sign_random = np.random.choice((-1,1)) #Random sign generated
         else: # There is no obstacle
 
             msg.linear.x = 0.0
-            msg.angular.z = 0.2
+            msg.angular.z = 0.2 * self.sign_random  #Rotation is random either CW or CCW
             self.obstacle = 1
+
+        if interrupt:
+            msg.linear.x = 0.0
+            msg.angular.z = 0.0
 
         self.publisher_.publish(msg)
         self.get_logger().info('x: "%0.2f"' % msg.linear.x)
@@ -68,14 +73,12 @@ def main(args=None):
 
     obstacle_avoidance = ObstacleAvoidance() #instanitating the sub class
 
-    rclpy.spin(obstacle_avoidance)
-    #if KeyboardInterrupt:
-        
+    # rclpy.spin(obstacle_avoidance)        
 
-    # try: to stop the robot if there is a keyboard interrupt
-    #     rclpy.spin(obstacle_avoidance)
-    # except KeyboardInterrupt:
-    #     obstacle_avoidance.vel_forward(interrupt=True)
+    try: #to stop the robot if there is a keyboard interrupt
+        rclpy.spin(obstacle_avoidance)
+    except KeyboardInterrupt:
+        rclpy.spin_once(obstacle_avoidance.vel_forward(interrupt=True))
 
     # Destroy the node explicitly
     # (optional - otherwise it will be done automatically
